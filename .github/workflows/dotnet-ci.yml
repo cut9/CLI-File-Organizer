@@ -1,0 +1,38 @@
+name: .NET CI (Linux / macOS)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Run unit tests (if any)
+      run: |
+        found=false
+        while IFS= read -r proj; do
+          found=true
+          echo "Running tests for $proj"
+          dotnet test "$proj" --no-build --verbosity normal
+        done < <(find . -type f \( -name "*Tests.csproj" -o -name "*Test.csproj" \))
+        if [ "$found" = false ] ; then
+          echo "No test projects found, skipping tests."
+        fi
