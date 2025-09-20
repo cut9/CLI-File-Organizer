@@ -52,7 +52,7 @@ if (!string.IsNullOrEmpty(otherExtension))
 Dictionary<string, int> sortStatisticDictionary = new Dictionary<string, int>();
 
 var options = new OptionSet {
-    { "by=", "Сортировка по категориям: 'extension' - сортировать по расширениям, 'date' - сортировать по дате последнего изменения, 'size' - сортировать по размеру.", v => sortMode = v },
+    { "by=", "Сортировка по категориям: 'extension' - сортировать по расширениям, 'year' - сортировать по году последнего изменения, 'month' - сортировать по месяцу и году последнего изменения, 'size' - сортировать по размеру.", v => sortMode = v.ToLower() },
     { "dry-run", "Только показать, куда переместятся файлы, без реального перемещения.", v => dryRunMode = true },
     { "help", "Показать справку.", v => showHelp = v != null },
 };
@@ -109,10 +109,16 @@ void SortFiles()
                 OrganizeByExtension(file);
             }
             break;
-        case "date":
+        case "month":
             foreach (var file in dir)
             {
-                OrganizeByDate(file);
+                OrganizeByMonth(file);
+            }
+            break;
+        case "year":
+            foreach (var file in dir)
+            {
+                OrganizeByYear(file);
             }
             break;
         case "size":
@@ -152,7 +158,7 @@ void OrganizeByExtension(string file)
     }
 }
 
-void OrganizeByDate(string file)
+void OrganizeByMonth(string file)
 {
     var monthName = new CultureInfo("en-US").DateTimeFormat.MonthGenitiveNames;
     DateTime date = new FileInfo(file).LastWriteTime;
@@ -166,6 +172,19 @@ void OrganizeByDate(string file)
         sortStatisticDictionary[yearMonthKey]++;
     else
         sortStatisticDictionary.Add(yearMonthKey, 1);
+}
+
+void OrganizeByYear(string file)
+{
+    DateTime date = new FileInfo(file).LastWriteTime;
+    string yearPath = Path.Combine(path, date.Year.ToString());
+    MoveFile(file, yearPath);
+    if (!successCopy)
+        return;
+    if (sortStatisticDictionary.ContainsKey(yearPath))
+        sortStatisticDictionary[yearPath]++;
+    else
+        sortStatisticDictionary.Add(yearPath, 1);
 }
 
 void OrganizeBySize(string file)
